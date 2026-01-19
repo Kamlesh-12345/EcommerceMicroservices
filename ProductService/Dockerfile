@@ -11,7 +11,7 @@ COPY . .
 FROM build AS publish
 RUN dotnet publish "ProductService.csproj" -c Release -o /app/publish --no-restore
 
-FROM Base AS final
+FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "ProductService.dll"]
