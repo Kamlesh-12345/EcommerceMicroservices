@@ -31,6 +31,7 @@ app.MapPost("/products", (Product product) =>
 
 app.MapGet("/health", () => Results.Ok("Healthy"));
 
+app.Run();
+
 record Product(int Id, string Name, decimal Price, int Stock);
 
-app.Run();
