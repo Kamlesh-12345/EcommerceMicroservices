@@ -17,7 +17,7 @@ var orders = new List<Order>
 app.MapGet("/orders", () => orders);
 app.MapGet("/orders/{id}", (int id) => orders.FirstOrDefault(o => o.Id == id)
         is Order order
-        ? Results.Ok(orders)
+        ? Results.Ok(order)
         : Results.NotFound());
 
 app.MapGet("/health", () => Results.Ok("Healthy"));
