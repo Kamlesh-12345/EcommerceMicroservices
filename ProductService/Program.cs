@@ -1,37 +1,83 @@
+using Microsoft.EntityFrameworkCore;
+using ProductService.Data;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.AddDbContext<ProductDbContext>(options =>
+    options.UseSqlServer(builder.configuration.GetConnectionString("DefaultConnection"))
+);
+
 var app = builder.Build();
+
 if(app.Environment.IsDevelopment())
 {
     app.UseSwagger(); app.UseSwaggerUI();
 }
 
-var products = new List<Product>
-{
-    new(1, "Laptop", 50000, 10),
-    new(2, "Mouse", 500, 50),
-    new(3, "Keyboard", 1500, 30)
-};
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
 
-app.MapGet("/products", () => products);
-app.MapGet("/products/{id}", (int id) =>
-products.FirstOrDefault(p => p.Id == id) 
-    is Product product 
-    ? Results.Ok(product) 
-    : Results.NotFound());
-
-app.MapPost("/products", (Product product) =>
+app.MapGet("/products", async(ProductDbContext context) => 
 {
-    products.Add(product);
+    var products = await context.Products.ToListAsync();
+    return Results.Ok(products);
+});
+
+app.MapGet("/products/{id}", async (int id, ProductDbContext context) => 
+{
+    var product = await context.Products.FindAsync(id);
+    return product is not null ? Results.Ok(product) : Results.NotFound();
+});
+
+app.MapPost("/products", async (ProductService.Models.Product product, 
+ProductDbContext context) => 
+{
+    context.Products.Add(product);
+    await context.SaveChangesAsync();
     return Results.Created($"/products/{product.Id}", product);
 });
 
-app.MapGet("/health", () => Results.Ok("Healthy"));
+app.MapPut("/products/{id}", async (int id, ProductService.Models.product updateProduct,
+ProductDbContext context) =>
+{
+    var product = await context.Products.FindAsync(id);
+    if (product is null) return Results.NotFound();
+
+    product.Name = updateProduct.Name;
+    product.Description = updateProduct.Description;
+    product.Price = updateProduct.Price;
+    product.Stock = updateProduct.Stock;
+    product.UpdatedAt = DateTime.UtcNow;
+
+    await context.SaveChangesAsync();
+    return Results.Ok(product);
+});
+
+app.MapDelete("/products/{id}", async(int id, ProductDbContext context) => 
+{
+    var product = await context.Products.FindAsync(id);
+    if(product is null) return Results.NotFound();
+
+    context.Products.Remove(product);
+    await context.SaveChangesAsync();
+    return Results.NoContent();
+});
+
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "ProductService", 
+timestamp = DateTime.UtcNow }));
+
+using(var scope = app.Services.CreateScope())
+{
+    var dbContext = Scope.ServiceProvider.GetRequiredService<ProductDbContext>();
+    dbContext.Database.EnsureCreated();
+    console.WriteLine("ProductService database initialized!");
+}
 
 app.Run();
-
-record Product(int Id, string Name, decimal Price, int Stock);
 
