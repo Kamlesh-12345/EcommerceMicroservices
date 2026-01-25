@@ -5,11 +5,12 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 COPY ["OrderService.csproj", "."]
+RUN dotnet nuget locals all --clear
 RUN dotnet restore "OrderService.csproj"
 COPY . .
 
 FROM build AS publish
-RUN dotnet publish "OrderService.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "OrderService.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
