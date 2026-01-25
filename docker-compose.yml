@@ -3,7 +3,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: mssql
     environment:
-      SA_PASSWORD" "YourStrongPasswOrd123"
+      SA_PASSWORD": "YourStrongPasswOrd123"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Express"
     ports:
@@ -11,7 +11,7 @@ services:
     volumes:
       - sql-data:/var/opt/mssql
     healthcheck:
-      test: ["cmd-shell", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrongPasswOrd123 -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrongPasswOrd123 -Q 'SELECT 1' || exit 1"]
       interval: 10s
       retries: 10
       start_period: 10s
@@ -19,7 +19,7 @@ services:
 
   productservice:
     build:
-      context:
+      context: .
       dockerfile: ProductService/Dockerfile
     ports: 
       - "5003:8080"
@@ -33,7 +33,7 @@ services:
 
   orderservice:
     build:
-      context:
+      context: .
       dockerfile: OrderService/Dockerfile
     ports: 
       - "5002:8080"
@@ -47,7 +47,7 @@ services:
 
   apigateway:
     build:
-      context:
+      context: .
       dockerfile: ApiGateway/Dockerfile
     ports: 
       - "5000:8080"
