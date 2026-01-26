@@ -7,7 +7,7 @@ namespace OrderService.Models
         public int Quantity { get; set; }
         public string CustomerName { get; set; } = string.Empty;
         public string CustomerEmail { get; set; } = string.Empty;
-        public string shippingAddress { get; set; } = string.Empty;
+        public string ShippingAddress { get; set; } = string.Empty;
         public decimal TotalAmount { get; set; }
         public string Status { get; set; } = "Pending";
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;

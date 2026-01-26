@@ -9,7 +9,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<OrderDbContext>(options =>
-    options.UseSqlServer(builder.configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 var app = builder.Build();
@@ -43,7 +43,7 @@ OrderDbContext context) =>
     return Results.Created($"/orders/{order.Id}", order);
 });
 
-app.MapPut("/orders/{id}", async (int id, OrderService.Models.order updateOrder,
+app.MapPut("/orders/{id}", async (int id, OrderService.Models.Order updateOrder,
 OrderDbContext context) =>
 {
     var order = await context.Orders.FindAsync(id);
@@ -76,9 +76,9 @@ timestamp = DateTime.UtcNow }));
 
 using(var scope = app.Services.CreateScope())
 {
-    var dbContext = Scope.ServiceProvider.GetRequiredService<OrderDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<OrderDbContext>();
     dbContext.Database.EnsureCreated();
-    console.WriteLine("OrderService database initialized!");
+    Console.WriteLine("OrderService database initialized!");
 }
 
 app.Run();
