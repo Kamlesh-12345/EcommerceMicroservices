@@ -3,7 +3,7 @@ services:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: mssql
     environment:
-      SA_PASSWORD": "YourStrongPasswOrd123"
+      SA_PASSWORD: "YourStrongPasswOrd123"
       ACCEPT_EULA: "Y"
       MSSQL_PID: "Express"
     ports:
@@ -11,11 +11,11 @@ services:
     volumes:
       - sql-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrongPasswOrd123 -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P \"YourStrongPasswOrd123\" -Q \"SELECT 1" || exit 1"]
       interval: 10s
-      retries: 10
-      start_period: 10s
-      timeout: 3s
+      retries: 20
+      start_period: 30s
+      timeout: 5s
 
   productservice:
     build:
