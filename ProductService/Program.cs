@@ -9,7 +9,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ProductDbContext>(options =>
-    options.UseSqlServer(builder.configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 var app = builder.Build();
@@ -43,7 +43,7 @@ ProductDbContext context) =>
     return Results.Created($"/products/{product.Id}", product);
 });
 
-app.MapPut("/products/{id}", async (int id, ProductService.Models.product updateProduct,
+app.MapPut("/products/{id}", async (int id, ProductService.Models.Product updateProduct,
 ProductDbContext context) =>
 {
     var product = await context.Products.FindAsync(id);
@@ -74,9 +74,9 @@ timestamp = DateTime.UtcNow }));
 
 using(var scope = app.Services.CreateScope())
 {
-    var dbContext = Scope.ServiceProvider.GetRequiredService<ProductDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
     dbContext.Database.EnsureCreated();
-    console.WriteLine("ProductService database initialized!");
+    Console.WriteLine("ProductService database initialized!");
 }
 
 app.Run();
