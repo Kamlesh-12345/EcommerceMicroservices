@@ -18,7 +18,7 @@ namespace ProductService.Data
                 new Product { Id = 2, Name = 'Mouse', Description = 'Wireless mouse'
                 , Price = 500, Stock = 50},
                 new Product { Id = 3, Name = 'Keyboard', Description = 'Mechanical keyboard'
-                , Price = 1500, Stock = 30},
+                , Price = 1500, Stock = 30}
             );
         }
     }
