@@ -3,11 +3,14 @@ using Yarp.ReverseProxy.Forwarder;
 
 public sealed class ResilienceForwarderHttpClientFactory : IForwarderHttpClientFactory
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpMessageHandlerFactory _handlerFactory;
 
-    public ResilienceForwarderHttpClientFactory(IHttpClientFactory httpClientFactory)
-        => _httpClientFactory = httpClientFactory;
+    public ResilienceForwarderHttpClientFactory(IHttpMessageHandlerFactory handlerFactory)
+        => _handlerFactory = handlerFactory;
 
     public HttpMessageInvoker CreateClient(ForwarderHttpClientContext context)
-        => _httpClientFactory.CreateClient("yarp-resilient");
+    {
+        var handler = _handlerFactory.CreateHandler("yarp-resilient");
+        return new HttpMessageInvoker(handler, disposeHandler: false);
+    }
 }
