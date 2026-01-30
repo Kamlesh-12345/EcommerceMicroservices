@@ -75,8 +75,8 @@ timestamp = DateTime.UtcNow }));
 using(var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
-    dbContext.Database.EnsureCreated();
-    Console.WriteLine("ProductService database initialized!");
+    dbContext.Database.Migrate();
+    Console.WriteLine("ProductService database migrated!");
 }
 
 app.Run();
