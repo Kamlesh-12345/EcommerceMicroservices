@@ -12,6 +12,13 @@ namespace ProductService.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            // Fix decimal truncation warning for Price
+            modelBuilder.Entity<Product>()
+                .Property(p => p.Price)
+                .HasPrecision(18, 2);
+                
             var seedUtc = new DateTime(2024, 01, 01, 0, 0, 0, DateTimeKind.Utc);
 
             modelBuilder.Entity<Product>().HasData(

@@ -12,6 +12,12 @@ namespace OrderService.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Order>()
+            .Property(o => o.TotalAmount)
+            .HasPrecision(18, 2);
+
             var seedUtc = new DateTime(2024, 01, 01, 0, 0, 0, DateTimeKind.Utc);
 
             modelBuilder.Entity<Order>().HasData(
