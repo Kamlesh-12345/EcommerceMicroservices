@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
+using OrderService.Contracts;
+using OrderService.Models;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,30 +34,95 @@ app.MapGet("/orders/{id}", async (int id, OrderDbContext context) =>
     return order is not null ? Results.Ok(order) : Results.NotFound();
 });
 
-app.MapPost("/orders", async (OrderService.Models.Order order, 
+app.MapPost("/orders", async (CreateOrderRequest req, 
 OrderDbContext context) => 
 {
+    var errors = new Dictionary<string, string[]>();
+
+    if (req.ProductId <= 0) errors["productId"] = new[] {"ProductId must be > 0"};
+    if (req.Quantity < 0) errors["quantity"] = new[] {"Quantity must be > 0"};
+
+    if (string.IsNullOrWhiteSpace(req.CustomerName)) errors["customerName"] = new[] {"CustomerName is required"};
+    if  (string.IsNullOrWhiteSpace(req.CustomerEmail)) errors["customerEmail"] = new[] {"CustomerEmail is required"};
+    else if (!req.CustomerEmail.Contains('@')) errors["customerEmail"] = new[] {"CustomerEmail must contain @"};
+
+    if  (string.IsNullOrWhiteSpace(req.ShippingAddress)) errors["shippingAddress"] = new[] {"ShippingAddress is required"};
+
+    if(errors.Count > 0) return Results.ValidationProblem(errors);
+
+    var order = new Order
+    {
+        ProductId = req.ProductId,
+        Quantity = req.Quantity,
+        CustomerName = req.CustomerName.Trim(),
+        CustomerEmail = req.CustomerEmail.Trim(),
+        ShippingAddress = req.ShippingAddress.Trim(),
+        Status = "Pending",
+        OrderDate = DateTime.UtcNow,
+        TotalAmount = 0m
+    };
+
     context.Orders.Add(order);
     await context.SaveChangesAsync();
-    return Results.Created($"/orders/{order.Id}", order);
+
+    var resp = new OrderResponse
+    {
+        Id = order.Id,
+        ProductId = order.ProductId,
+        Quantity = order.Quantity,
+        CustomerName = order.CustomerName,
+        CustomerEmail = order.CustomerEmail,
+        ShippingAddress = order.ShippingAddress,
+        TotalAmount = order.TotalAmount,
+        Status = order.Status,
+        OrderDate = order.OrderDate
+    };
+
+    return Results.Created($"/orders/{order.Id}", resp);
 });
 
-app.MapPut("/orders/{id}", async (int id, OrderService.Models.Order updateOrder,
+app.MapPut("/orders/{id}", async (int id, UpdateOrderRequest req,
 OrderDbContext context) =>
 {
+
+    var errors = new Dictionary<string, string[]>();
+
+    if (req.ProductId <= 0) errors["productId"] = new[] {"ProductId must be > 0"};
+    if (req.Quantity < 0) errors["quantity"] = new[] {"Quantity must be > 0"};
+
+    if (string.IsNullOrWhiteSpace(req.CustomerName)) errors["customerName"] = new[] {"CustomerName is required"};
+    if  (string.IsNullOrWhiteSpace(req.CustomerEmail)) errors["customerEmail"] = new[] {"CustomerEmail is required"};
+    else if (!req.CustomerEmail.Contains('@')) errors["customerEmail"] = new[] {"CustomerEmail must contain @"};
+
+    if  (string.IsNullOrWhiteSpace(req.ShippingAddress)) errors["shippingAddress"] = new[] {"ShippingAddress is required"};
+
+    if(errors.Count > 0) return Results.ValidationProblem(errors);
+
     var order = await context.Orders.FindAsync(id);
     if (order is null) return Results.NotFound();
 
-    order.ProductId = updateOrder.ProductId;
-    order.Quantity = updateOrder.Quantity;
-    order.CustomerName = updateOrder.CustomerName;
-    order.CustomerEmail = updateOrder.CustomerEmail;
-    order.ShippingAddress = updateOrder.ShippingAddress;
-    order.TotalAmount = updateOrder.TotalAmount;
-    order.Status = updateOrder.Status;
+    order.ProductId = req.ProductId;
+    order.Quantity = req.Quantity;
+    order.CustomerName = req.CustomerName;
+    order.CustomerEmail = req.CustomerEmail;
+    order.ShippingAddress = req.ShippingAddress;
     
     await context.SaveChangesAsync();
-    return Results.Ok(order);
+
+    var resp = new OrderResponse
+    {
+        Id = order.Id,
+        ProductId = order.ProductId,
+        Quantity = order.Quantity,
+        CustomerName = order.CustomerName,
+        CustomerEmail = order.CustomerEmail,
+        ShippingAddress = order.ShippingAddress,
+        TotalAmount = order.TotalAmount,
+        Status = order.Status,
+        OrderDate = order.OrderDate
+    };
+
+    return Results.Ok(resp);
 });
 
 app.MapDelete("/orders/{id}", async(int id, OrderDbContext context) => 

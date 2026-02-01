@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProductService.Data;
+using ProductService.Contracts;
+using ProductService.Models;
 using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,28 +34,74 @@ app.MapGet("/products/{id}", async (int id, ProductDbContext context) =>
     return product is not null ? Results.Ok(product) : Results.NotFound();
 });
 
-app.MapPost("/products", async (ProductService.Models.Product product, 
+app.MapPost("/products", async (CreateProductRequest req, 
 ProductDbContext context) => 
 {
-    context.Products.Add(product);
+    var errors = new Dictionary<string, string[]>();
+
+    if(string.IsNullOrWhiteSpace(req.Name)) errors["name"] = new[] {"Name is required"}; 
+    if(req.Price <= 0) errors["price"] = new[] {"Price must be > 0"};
+    if(req.Stock < 0) errors["stock"] = new[] {"Stock must be >= 0"};
+
+    if (errors.Count > 0) return Results.ValidationProblem(errors);
+
+    var entity = new Product
+    {
+        Name = req.Name.Trim(),
+        Description = req.Description,
+        Price = req.Price,
+        Stock = req.Stock,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
+
+    context.Products.Add(entity);
     await context.SaveChangesAsync();
-    return Results.Created($"/products/{product.Id}", product);
+
+    var resp = new ProductResponse
+    {
+        Id = entity.Id,
+        Name = entity.Name,
+        Description = entity.Description,
+        Price = entity.Price,
+        Stock = entity.Stock
+    };
+
+    return Results.Created($"/products/{entity.Id}", resp);
 });
 
-app.MapPut("/products/{id}", async (int id, ProductService.Models.Product updateProduct,
+app.MapPut("/products/{id}", async (int id, UpdateProductRequest req,
 ProductDbContext context) =>
 {
+    var errors = new Dictionary<string, string[]>();
+
+    if(string.IsNullOrWhiteSpace(req.Name)) errors["name"] = new[] {"Name is required"}; 
+    if(req.Price <= 0) errors["price"] = new[] {"Price must be > 0"};
+    if(req.Stock < 0) errors["stock"] = new[] {"Stock must be >= 0"};
+
+    if (errors.Count > 0) return Results.ValidationProblem(errors);
+
     var product = await context.Products.FindAsync(id);
     if (product is null) return Results.NotFound();
 
-    product.Name = updateProduct.Name;
-    product.Description = updateProduct.Description;
-    product.Price = updateProduct.Price;
-    product.Stock = updateProduct.Stock;
+    product.Name = req.Name;
+    product.Description = req.Description;
+    product.Price = req.Price;
+    product.Stock = req.Stock;
     product.UpdatedAt = DateTime.UtcNow;
 
     await context.SaveChangesAsync();
-    return Results.Ok(product);
+
+var resp = new ProductResponse
+{
+    Id = product.Id,
+    Name = product.Name,
+    Description = product.Description,
+    Price = product.Price,
+    Stock = product.Stock
+};
+
+    return Results.Ok(resp);
 });
 
 app.MapDelete("/products/{id}", async(int id, ProductDbContext context) => 
