@@ -41,12 +41,14 @@ docker compose down -v
 - OrderService (direct): http://localhost:5002
 - SQL Server: localhost: 1433
 
-Database & migrations
+## Database & migrations
+- ProductService and OrderService run Database.Migrate() on startup, so tables + seed data are created automatically.
+- Connection strings are provided via Docker Compose environment variables.
 
-## Quick test (via gateway)
+## Quick smoke test (via gateway)
 
 ### Gateway root
-- GET http://localhost:5000
+- GET http://localhost:5000/ -> should return: API Gateway is running!
 
 ### Products
 - GET http://localhost:5000/api/products/
@@ -57,16 +59,20 @@ Database & migrations
 - GET http://localhost:5000/api/orders/1
 
 ### Create a product (via gateway)
-- POST http://localhost:5000/api/products/
+```
+curl -i -X POST "http://localhost:5000/api/products" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Monitor","description":"24 inch","price":12000,"stock":20}'
+```
+## Reserve stock (called internally by OrderService)
+OrderService calls ProductService endpoint:
+- POST /products/{id}/reserve with JSON { "quantity": <n> }
 
-### Body:
-```json
-{
-"id": 4,
-"name": "Monitor",
-"price": 12000,
-"stock": 20
-}
+## Create an order (via gateway)
+```
+curl -i -X POST "http://localhost:5000/api/orders" \
+  -H "Content-Type: application/json" \
+  -d '{"productId":1,"quantity":1,"customerName":"John Doe","customerEmail":"john@example.com","shippingAddress":"123 Street"}'
 ```
 
 ## Direct service checks (optional)
