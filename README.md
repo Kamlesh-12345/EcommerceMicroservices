@@ -95,7 +95,3 @@ curl -i -X POST "http://localhost:5000/api/orders" \
 - <FORWARDED_BASE_URL>/api/orders/
 
 Forwarded URLs can change per session—use the Ports tab.
-
-## Notes
-- ASPNETCORE_ENVIRONMENT=Development is set in docker-compose.yml
-- Services are discovered by DNS names (e.g., http://productservice:8080/) inside the Compose network
