@@ -13,8 +13,8 @@ This repository is a simple microservices demo using Docker Compose:
 
 ### Gateway routes
 
-- `api/products/{**catch-all}` -> `ProductService` -> `/products/{**catch-all}`
-- `api/orders/{**catch-all}`  -> `OrderService` -> `/orders/{**catch-all}`
+- `/api/products/{**catch-all}` -> `ProductService` -> `/products/{**catch-all}`
+- `/api/orders/{**catch-all}`  -> `OrderService` -> `/orders/{**catch-all}`
 
 ## Run (Docker Compose)
 
@@ -66,7 +66,7 @@ curl -i -X POST "http://localhost:5000/api/products" \
 ```
 ## Reserve stock (called internally by OrderService)
 OrderService calls ProductService endpoint:
-- POST /products/{id}/reserve with JSON { "quantity": <n> }
+- POST /products/{id}/reserve with JSON { "quantity": 1 }
 
 ## Create an order (via gateway)
 ```
