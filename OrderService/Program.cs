@@ -13,7 +13,16 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
+builder.Services.AddProblemDetails();
+
+builder.Services.AddHttpClient<OrderService.Clients.ProductClient>(c =>
+{
+    c.BaseAddress = new Uri("http://productservice:8080");
+});
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if(app.Environment.IsDevelopment())
 {
@@ -28,14 +37,15 @@ app.MapGet("/orders", async(OrderDbContext context) =>
     return Results.Ok(orders);
 });
 
-app.MapGet("/orders/{id}", async (int id, OrderDbContext context) => 
+app.MapGet("/orders/{id:int}", async (int id, OrderDbContext context) => 
 {
     var order = await context.Orders.FindAsync(id);
     return order is not null ? Results.Ok(order) : Results.NotFound();
 });
 
 app.MapPost("/orders", async (CreateOrderRequest req, 
-OrderDbContext context) => 
+OrderDbContext context,OrderService.Clients.ProductClient productClient,
+    CancellationToken ct) => 
 {
     var errors = new Dictionary<string, string[]>();
 
@@ -49,6 +59,19 @@ OrderDbContext context) =>
     if  (string.IsNullOrWhiteSpace(req.ShippingAddress)) errors["shippingAddress"] = new[] {"ShippingAddress is required"};
 
     if(errors.Count > 0) return Results.ValidationProblem(errors);
+
+     // Reserve stock FIRST
+    var (ok, status) = await productClient.ReserveStockAsync(req.ProductId, req.Quantity, ct);
+    if (!ok)
+    {
+        if (status == System.Net.HttpStatusCode.Conflict)
+            return Results.Conflict(new { message = "Insufficient stock" });
+
+        if (status == System.Net.HttpStatusCode.NotFound)
+            return Results.NotFound(new { message = "Product not found" });
+
+        return Results.StatusCode(502);
+    }
 
     var order = new Order
     {
@@ -81,7 +104,7 @@ OrderDbContext context) =>
     return Results.Created($"/orders/{order.Id}", resp);
 });
 
-app.MapPut("/orders/{id}", async (int id, UpdateOrderRequest req,
+app.MapPut("/orders/{id:int}", async (int id, UpdateOrderRequest req,
 OrderDbContext context) =>
 {
 
@@ -125,7 +148,7 @@ OrderDbContext context) =>
     return Results.Ok(resp);
 });
 
-app.MapDelete("/orders/{id}", async(int id, OrderDbContext context) => 
+app.MapDelete("/orders/{id:int}", async(int id, OrderDbContext context) => 
 {
     var order = await context.Orders.FindAsync(id);
     if(order is null) return Results.NotFound();
@@ -137,6 +160,8 @@ app.MapDelete("/orders/{id}", async(int id, OrderDbContext context) =>
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "OrderService", 
 timestamp = DateTime.UtcNow }));
+
+app.MapGet("/orders/boom", () => Results.Problem("test", statusCode: 500));
 
 using(var scope = app.Services.CreateScope())
 {

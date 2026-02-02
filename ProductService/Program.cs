@@ -13,7 +13,11 @@ builder.Services.AddDbContext<ProductDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 if(app.Environment.IsDevelopment())
 {
@@ -28,7 +32,7 @@ app.MapGet("/products", async(ProductDbContext context) =>
     return Results.Ok(products);
 });
 
-app.MapGet("/products/{id}", async (int id, ProductDbContext context) => 
+app.MapGet("/products/{id:int}", async (int id, ProductDbContext context) => 
 {
     var product = await context.Products.FindAsync(id);
     return product is not null ? Results.Ok(product) : Results.NotFound();
@@ -70,7 +74,32 @@ ProductDbContext context) =>
     return Results.Created($"/products/{entity.Id}", resp);
 });
 
-app.MapPut("/products/{id}", async (int id, UpdateProductRequest req,
+app.MapPost("/products/{id:int}/reserve", async (
+    int id,
+    ProductService.Contracts.ReserveStockRequest req,
+    ProductDbContext context) =>
+    {
+        if (req.Quantity <= 0)
+        return Results.ValidationProblem(new Dictionary<string, string[]>
+        {
+            ["quantity"] = new[] {"must be > 0"}    
+        });
+
+        var product = await context.Products.FindAsync(id);
+        if (product is null) return Results.NotFound();
+
+        if (product.Stock < req.Quantity)
+            return Results.Conflict(new { message = "Insufficient Stock" });
+
+        product.Stock -= req.Quantity;
+        product.UpdatedAt = DateTime.UtcNow;
+
+        await context.SaveChangesAsync();
+        return Results.Ok(new { product.Id, product.Stock });
+    
+});
+
+app.MapPut("/products/{id:int}", async (int id, UpdateProductRequest req,
 ProductDbContext context) =>
 {
     var errors = new Dictionary<string, string[]>();
@@ -104,7 +133,7 @@ var resp = new ProductResponse
     return Results.Ok(resp);
 });
 
-app.MapDelete("/products/{id}", async(int id, ProductDbContext context) => 
+app.MapDelete("/products/{id:int}", async(int id, ProductDbContext context) => 
 {
     var product = await context.Products.FindAsync(id);
     if(product is null) return Results.NotFound();
@@ -116,6 +145,8 @@ app.MapDelete("/products/{id}", async(int id, ProductDbContext context) =>
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", service = "ProductService", 
 timestamp = DateTime.UtcNow }));
+
+app.MapGet("/products/boom", () => Results.Problem("test", statusCode: 500));
 
 using(var scope = app.Services.CreateScope())
 {
