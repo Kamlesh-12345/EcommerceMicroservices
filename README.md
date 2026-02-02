@@ -1,14 +1,15 @@
-# Ecommerce Microservices demo (.NET 8 + YARP + Docker)
+# Ecommerce Microservices demo (.NET 8 + YARP + Docker + SQL Server)
 
 ## Overview
-This repository is a simple microservices demo:
+This repository is a simple microservices demo using Docker Compose:
 
-- ProductService: .NET 8 Minimal API (in-memory product list)
-- OrderService: .NET 8 Minimal API (in-memory orders list)
-- ApiGateway: YARP (Yet Another Reverse Proxy) acting as an API Gateway routing requests to services
+- ProductService: .NET 8 Minimal API + EF Core (SQL Server) for products
+- OrderService: .NET 8 Minimal API + EF Core (SQL Server) for orders (Calls ProductService to reserve stock)
+- ApiGateway: YARP (Yet Another Reverse Proxy) API Gateway with HTTP resilience. (timeouts + circuit breaker)
+- SQL Server: Microsoft SQL Server 2022 (Express)
 
 ## Architecture (high level)
-- Client -> ApiGateway (YARP) -> ProductService / OrderService
+- Client -> ApiGateway (YARP) -> ProductService / OrderService -> SQL Server
 
 ### Gateway routes
 
@@ -18,11 +19,19 @@ This repository is a simple microservices demo:
 ## Run (Docker Compose)
 
 ### Prereqs
-- Docker
+- Docker (Docker Desktop / Docker Engine)
 
 ### From the repo root
 ```bash
 docker compose up --build
+```
+Stop everything
+```
+docker compose down
+```
+Reset databases (deletes SQL volume)
+```
+docker compose down -v
 ```
 
 ## Ports
@@ -30,6 +39,9 @@ docker compose up --build
 - ApiGateway: http://localhost:5000
 - ProductService (direct): http://localhost:5003
 - OrderService (direct): http://localhost:5002
+- SQL Server: localhost: 1433
+
+Database & migrations
 
 ## Quick test (via gateway)
 
